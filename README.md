@@ -9,4 +9,4 @@ Il gioco include:
 * Sistema di punteggio e record salvati localmente
 * Interfaccia ottimizzata per desktop e mobile
 
-É collegato alla repository centrale MasterHub, piena di altri minigame.
+É collegato alla repository centrale MasterHub (https://mastersabba.github.io/MasterSabba/), piena di altri minigame.
