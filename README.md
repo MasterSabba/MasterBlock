@@ -11,3 +11,4 @@ Il gioco include:
 
 É collegato alla repository centrale MasterHub (https://mastersabba.github.io/MasterSabba/), piena di altri minigame.
 
+![Immagine](IMG_9420.jpeg)
