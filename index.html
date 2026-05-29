@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MasterBlock</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;         
+            --text-color: #f8fafc;       
+            --grid-bg: #1e293b;          
+            --cell-empty: #0f172a;       
+            --block-color: #3b82f6;      /* Colore unico e pulito per la scritta BLOCK */
+            --primary-btn: #3b82f6;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            overflow: hidden; 
+            touch-action: none; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* STILE PULSANTE EXIT GRIGIO SCURO INTEGRATO */
+        .exit-button {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 2rem;
+            line-height: 1;
+            color: #333; /* Grigio scuro discreto */
+            text-decoration: none;
+            z-index: 2001;
+            transition: all 0.2s ease;
+            font-family: Arial, sans-serif;
+        }
+        .exit-button:hover {
+            color: var(--text-color); /* Si illumina al passaggio */
+            transform: scale(1.1);
+        }
+
+        /* STILI TITOLO */
+        h1 {
+            margin: 0;
+            font-size: 2.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .title-master {
+            color: #ffffff;
+        }
+
+        .title-block {
+            color: var(--block-color); /* Colore solido azzurro, senza arcobaleno */
+        }
+
+        /* INTERFACCIA INIZIALE ALTERNATIVA */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            z-index: 50;
+            position: absolute;
+            top: 0; left: 0;
+            padding: 20px;
+        }
+
+        .menu-subtitle {
+            color: #64748b;
+            font-size: 1rem;
+            margin-top: 5px;
+            margin-bottom: 50px;
+            letter-spacing: 1px;
+        }
+
+        .main-menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .action-btn {
+            background: #1e293b;
+            border: 2px solid #334155;
+            color: #ffffff;
+            padding: 18px 20px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-btn span {
+            font-size: 0.8rem;
+            font-weight: normal;
+            color: #94a3b8;
+        }
+
+        /* Colore distintivo per il tasto Challenge */
+        .btn-challenge {
+            border-color: #ef4444;
+        }
+        
+        .btn-challenge span {
+            color: #fca5a5;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+            background: #334155;
+        }
+
+        /* SCHERMATA DI GIOCO */
+        #game-screen {
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            height: 100%;
+        }
+
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+            margin-top: 40px; /* Spazio per non sovrapporsi alla X su mobile */
+        }
+
+        .score-box {
+            background: #1e293b;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 90px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .score-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .game-title-small h1 {
+            font-size: 1.5rem;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
+            background-color: var(--grid-bg);
+            padding: 4px;
+            border-radius: 6px;
+            width: 95vw;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+        }
+
+        .cell {
+            background-color: var(--cell-empty);
+            border-radius: 4px;
+        }
+
+        .cell.filled {
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+        }
+
+        /* Ostacoli fissi per la modalità Challenge */
+        .cell.obstacle {
+            background-color: #475569 !important;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        #pieces-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: auto;
+            margin-bottom: 20px;
+            height: 120px;
+            width: 100%;
+        }
+
+        .piece-slot {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .piece {
+            display: grid;
+            gap: 2px;
+            cursor: grab;
+        }
+
+        .piece:active {
+            cursor: grabbing;
+        }
+
+        .piece-cell {
+            width: 25px;
+            height: 25px;
+            border-radius: 4px;
+        }
+
+        .piece-cell.empty {
+            background-color: transparent;
+        }
+
+        .dragging {
+            position: fixed;
+            pointer-events: none; 
+            z-index: 1000;
+        }
+
+        /* GAME OVER */
+        #game-over {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.96);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #game-over h2 {
+            color: #ef4444;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        #game-over button {
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            background: var(--primary-btn);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 200px;
+        }
+        
+        .menu-btn {
+            background: #334155 !important;
+            margin-top: 10px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="https://mastersabba.github.io/MasterSabba/" class="exit-button" title="Torna all'Hub">×</a>
+
+    <div id="start-screen">
+        <h1><span class="title-master">MASTER</span> <span class="title-block">BLOCK</span></h1>
+        <div class="menu-subtitle">SELECT MODE</div>
+        
+        <div class="main-menu-buttons">
+            <button class="action-btn" onclick="startGame('standard')">
+                STANDARD
+            </button>
+            <button class="action-btn btn-challenge" onclick="startGame('challenge')">
+                CHALLENGE
+            </button>
+        </div>
+    </div>
+
+    <div id="game-screen">
+        <div class="game-header">
+            <div class="score-box">
+                <div class="score-label">Score</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+            
+            <div class="game-title-small">
+                <h1><span class="title-master">Master</span><span class="title-block">Block</span></h1>
+            </div>
+
+            <div class="score-box">
+                <div class="score-label">Best</div>
+                <div class="score-value" id="best-score">0</div>
+            </div>
+        </div>
+
+        <div id="game-board"></div>
+
+        <div id="pieces-container">
+            <div class="piece-slot" id="slot-0"></div>
+            <div class="piece-slot" id="slot-1"></div>
+            <div class="piece-slot" id="slot-2"></div>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <h2>GAME OVER</h2>
+        <p>Punteggio Finale: <span id="final-score"></span></p>
+        <button onclick="resetGame()">Gioca Ancora</button>
+        <button class="menu-btn" onclick="returnToMenu()">Menu Principale</button>
+    </div>
+
+    <script>
+        const ROWS = 8;
+        const COLS = 8;
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        let score = 0;
+        let bestScore = localStorage.getItem('masterblock_best_score') || 0;
+        let activePieces = [null, null, null];
+        let gameMode = 'standard'; 
+        
+        document.getElementById('best-score').innerText = bestScore;
+
+        const boardEl = document.getElementById('game-board');
+        const scoreEl = document.getElementById('score');
+
+        const PIECES_LIB = [
+            [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]], 
+            [[1,1,1,1]], [[1],[1],[1],[1]], [[1,1],[1,1]], 
+            [[1,0],[1,1]], [[0,1],[1,1]], [[1,1],[1,0]], [[1,1],[0,1]],
+            [[1,1,1],[0,1,0]], [[1,0,0],[1,1,1]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]]
+        ];
+
+        function startGame(mode) {
+            gameMode = mode;
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            resetGame();
+        }
+
+        function returnToMenu() {
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+
+        function initBoard() {
+            board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+            boardEl.innerHTML = '';
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.id = `cell-${r}-${c}`;
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            // Se siamo in modalità Challenge, posiziona da 3 a 5 ostacoli fissi distrutti/indistruttibili
+            if (gameMode === 'challenge') {
+                let obstaclesCount = 3 + Math.floor(Math.random() * 3); 
+                while (obstaclesCount > 0) {
+                    let randR = Math.floor(Math.random() * ROWS);
+                    let randC = Math.floor(Math.random() * COLS);
+                    if (board[randR][randC] === 0) {
+                        board[randR][randC] = 'obstacle'; 
+                        obstaclesCount--;
+                    }
+                }
+            }
+        }
+
+        function updateBoardVisuals() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    cell.className = 'cell'; 
+                    
+                    if (board[r][c] === 'obstacle') {
+                        cell.classList.add('obstacle');
+                        cell.style.backgroundColor = '';
+                    } else if (board[r][c] !== 0) {
+                        cell.classList.add('filled');
+                        cell.style.backgroundColor = board[r][c]; 
+                    } else {
+                        cell.style.backgroundColor = '';
+                    }
+                }
+            }
+        }
+
+        function generatePieces() {
+            let generatedCount = 0;
+            for (let i = 0; i < 3; i++) {
+                if (!activePieces[i]) {
+                    const randomPiece = PIECES_LIB[Math.floor(Math.random() * PIECES_LIB.length)];
+                    activePieces[i] = randomPiece;
+                    renderPieceInSlot(randomPiece, i);
+                    generatedCount++;
+                }
+            }
+            if (generatedCount > 0) checkGameOver();
+        }
+
+        function renderPieceInSlot(shape, index) {
+            const slot = document.getElementById(`slot-${index}`);
+            slot.innerHTML = '';
+            
+            const pieceEl = document.createElement('div');
+            pieceEl.classList.add('piece');
+            pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 25px)`;
+            
+            const solidColors = ['#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#2980b9', '#8e44ad', '#d81b60', '#0097e6'];
+            const randomColor = solidColors[Math.floor(Math.random() * solidColors.length)];
+
+            shape.forEach(row => {
+                row.forEach(val => {
+                    const block = document.createElement('div');
+                    block.classList.add('piece-cell');
+                    if (val === 0) {
+                        block.classList.add('empty');
+                    } else {
+                        block.style.backgroundColor = randomColor; 
+                    }
+                    pieceEl.appendChild(block);
+                });
+            });
+
+            pieceEl.addEventListener('pointerdown', (e) => startDrag(e, pieceEl, shape, index, randomColor));
+            slot.appendChild(pieceEl);
+        }
+
+        let draggedElement = null;
+        let dragData = null; 
+
+        function startDrag(e, element, shape, index, color) {
+            if (e.button !== 0 && e.type !== 'touchstart' && e.pointerType !== 'touch') return; 
+
+            dragData = { shape, index, color };
+            
+            draggedElement = element.cloneNode(true);
+            draggedElement.classList.add('dragging');
+            document.body.appendChild(draggedElement);
+
+            element.style.opacity = '0';
+
+            const boardRect = boardEl.getBoundingClientRect();
+            const gridCellWidth = boardRect.width / COLS;
+            const currentPieceCellWidth = 25; 
+            const exactScaleFactor = gridCellWidth / currentPieceCellWidth;
+
+            draggedElement.style.transform = `translate(-50%, -50%) scale(${exactScaleFactor})`;
+
+            moveDrag(e);
+
+            document.addEventListener('pointermove', moveDrag);
+            document.addEventListener('pointerup', endDrag);
+        }
+
+        function getGridCoords(e) {
+            if (!dragData) return { row: -1, col: -1 };
+            
+            const boardRect = boardEl.getBoundingClientRect();
+            const cellWidth = boardRect.width / COLS;
+            const cellHeight = boardRect.height / ROWS;
+
+            const yOffset = e.pointerType === 'touch' ? 75 : 0;
+            const targetX = e.clientX - boardRect.left;
+            const targetY = (e.clientY - yOffset) - boardRect.top;
+
+            const shape = dragData.shape;
+            const pRows = shape.length;
+            const pCols = shape[0].length;
+
+            const col = Math.round((targetX / cellWidth) - (pCols / 2));
+            const row = Math.round((targetY / cellHeight) - (pRows / 2));
+
+            return { row, col };
+        }
+
+        function moveDrag(e) {
+            if (!draggedElement) return;
+
+            draggedElement.style.left = `${e.clientX}px`;
+            const yOffset = e.pointerType === 'touch' ? 75 : 0;
+            draggedElement.style.top = `${e.clientY - yOffset}px`;
+
+            document.querySelectorAll('.cell.preview').forEach(cell => {
+                cell.classList.remove('preview');
+                if(!cell.classList.contains('obstacle')) cell.style.backgroundColor = '';
+                cell.style.opacity = '';
+            });
+
+            const { row, col } = getGridCoords(e);
+            if (canPlace(dragData.shape, row, col)) {
+                const shape = dragData.shape;
+                for (let r = 0; r < shape.length; r++) {
+                    for (let c = 0; c < shape[r].length; c++) {
+                        if (shape[r][c] === 1) {
+                            const cellEl = document.getElementById(`cell-${row + r}-${col + c}`);
+                            if (cellEl && !cellEl.classList.contains('obstacle')) {
+                                cellEl.classList.add('preview');
+                                cellEl.style.backgroundColor = dragData.color;
+                                cellEl.style.opacity = '0.5';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function endDrag(e) {
+            document.removeEventListener('pointermove', moveDrag);
+            document.removeEventListener('pointerup', endDrag);
+
+            if (!draggedElement) return;
+
+            document.querySelectorAll('.cell.preview').forEach(cell => {
+                cell.classList.remove('preview');
+                if(!cell.classList.contains('obstacle')) cell.style.backgroundColor = '';
+                cell.style.opacity = '';
+            });
+
+            const { row, col } = getGridCoords(e);
+            let placed = false;
+
+            if (canPlace(dragData.shape, row, col)) {
+                placePiece(dragData.shape, row, col, dragData.color);
+                placed = true;
+            }
+
+            draggedElement.remove();
+            draggedElement = null;
+
+            const originalSlot = document.getElementById(`slot-${dragData.index}`);
+            
+            if (placed) {
+                originalSlot.innerHTML = '';
+                activePieces[dragData.index] = null;
+                
+                let blocksPlaced = dragData.shape.flat().filter(v => v === 1).length;
+                addScore(blocksPlaced);
+
+                clearLines();
+                
+                if (activePieces.every(p => p === null)) {
+                    generatePieces();
+                } else {
+                    checkGameOver();
+                }
+            } else {
+                const originalPiece = originalSlot.querySelector('.piece');
+                if (originalPiece) originalPiece.style.opacity = '1';
+            }
+
+            dragData = null;
+        }
+
+        function canPlace(piece, row, col) {
+            for (let r = 0; r < piece.length; r++) {
+                for (let c = 0; c < piece[r].length; c++) {
+                    if (piece[r][c] === 1) {
+                        let boardRow = row + r;
+                        let boardCol = col + c;
+
+                        if (boardRow < 0 || boardRow >= ROWS || boardCol < 0 || boardCol >= COLS) return false;
+                        if (board[boardRow][boardCol] !== 0) return false; 
+                    }
+                }
+            }
+            return true;
+        }
+
+        function placePiece(piece, row, col, color) {
+            for (let r = 0; r < piece.length; r++) {
+                for (let c = 0; c < piece[r].length; c++) {
+                    if (piece[r][c] === 1) {
+                        board[row + r][col + c] = color; 
+                    }
+                }
+            }
+            updateBoardVisuals();
+        }
+
+        function clearLines() {
+            let rowsToClear = [];
+            let colsToClear = [];
+
+            for (let r = 0; r < ROWS; r++) {
+                if (board[r].every(cell => cell !== 0 && cell !== 'obstacle')) rowsToClear.push(r);
+            }
+
+            for (let c = 0; c < COLS; c++) {
+                let full = true;
+                for (let r = 0; r < ROWS; r++) {
+                    if (board[r][c] === 0 || board[r][c] === 'obstacle') full = false;
+                }
+                if (full) colsToClear.push(c);
+            }
+
+            let linesCleared = rowsToClear.length + colsToClear.length;
+            
+            if (linesCleared > 0) {
+                rowsToClear.forEach(r => {
+                    for (let c = 0; c < COLS; c++) board[r][c] = 0;
+                });
+                colsToClear.forEach(c => {
+                    for (let r = 0; r < ROWS; r++) board[r][c] = 0;
+                });
+
+                const bonus = [0, 10, 25, 45, 80]; 
+                addScore(bonus[Math.min(linesCleared, 4)]);
+
+                updateBoardVisuals();
+            }
+        }
+
+        function addScore(points) {
+            score += points;
+            scoreEl.innerText = score;
+            if (score > bestScore) {
+                bestScore = score;
+                document.getElementById('best-score').innerText = bestScore;
+                localStorage.setItem('masterblock_best_score', bestScore); 
+            }
+        }
+
+        function checkGameOver() {
+            let hasMoves = false;
+
+            for (let p = 0; p < activePieces.length; p++) {
+                const piece = activePieces[p];
+                if (!piece) continue;
+
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (canPlace(piece, r, c)) {
+                            hasMoves = true;
+                            break;
+                        }
+                    }
+                    if (hasMoves) break;
+                }
+                if (hasMoves) break;
+            }
+
+            if (!hasMoves) {
+                document.getElementById('final-score').innerText = score;
+                document.getElementById('game-over').style.display = 'flex';
+            }
+        }
+
+        function resetGame() {
+            score = 0;
+            scoreEl.innerText = score;
+            activePieces = [null, null, null];
+            document.getElementById('game-over').style.display = 'none';
+            initBoard();
+            updateBoardVisuals();
+            generatePieces();
+        }
+    </script>
+</body>
+</html>
