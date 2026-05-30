@@ -10,8 +10,9 @@
             --text-color: #f8fafc;       
             --grid-bg: #1e293b;          
             --cell-empty: #0f172a;       
-            --block-color: #3b82f6;      /* Colore unico e pulito per la scritta BLOCK */
+            --block-color: #3b82f6;      
             --primary-btn: #3b82f6;
+            --success: #22c55e;
             --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
@@ -35,25 +36,23 @@
             height: 100vh;
         }
 
-        /* STILE PULSANTE EXIT GRIGIO SCURO INTEGRATO */
         .exit-button {
             position: absolute;
             top: 15px;
             left: 20px;
             font-size: 2rem;
             line-height: 1;
-            color: #333; /* Grigio scuro discreto */
+            color: #333; 
             text-decoration: none;
             z-index: 2001;
             transition: all 0.2s ease;
             font-family: Arial, sans-serif;
         }
         .exit-button:hover {
-            color: var(--text-color); /* Si illumina al passaggio */
+            color: var(--text-color); 
             transform: scale(1.1);
         }
 
-        /* STILI TITOLO */
         h1 {
             margin: 0;
             font-size: 2.8rem;
@@ -67,10 +66,9 @@
         }
 
         .title-block {
-            color: var(--block-color); /* Colore solido azzurro, senza arcobaleno */
+            color: var(--block-color); 
         }
 
-        /* INTERFACCIA INIZIALE ALTERNATIVA */
         #start-screen {
             display: flex;
             flex-direction: column;
@@ -124,7 +122,6 @@
             color: #94a3b8;
         }
 
-        /* Colore distintivo per il tasto Challenge */
         .btn-challenge {
             border-color: #ef4444;
         }
@@ -138,7 +135,6 @@
             background: #334155;
         }
 
-        /* SCHERMATA DI GIOCO */
         #game-screen {
             display: none; 
             flex-direction: column;
@@ -156,7 +152,7 @@
             align-items: center;
             margin-bottom: 20px;
             padding: 0 10px;
-            margin-top: 40px; /* Spazio per non sovrapporsi alla X su mobile */
+            margin-top: 40px; 
         }
 
         .score-box {
@@ -206,7 +202,6 @@
             box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
         }
 
-        /* Ostacoli fissi per la modalità Challenge */
         .cell.obstacle {
             background-color: #475569 !important;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
@@ -257,7 +252,6 @@
             z-index: 1000;
         }
 
-        /* GAME OVER */
         #game-over {
             display: none;
             position: fixed;
@@ -320,8 +314,9 @@
                 <div class="score-value" id="score">0</div>
             </div>
             
-            <div class="game-title-small">
+            <div class="game-title-small" style="text-align: center;">
                 <h1><span class="title-master">Master</span><span class="title-block">Block</span></h1>
+                <div style="font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; color: var(--success); font-weight: bold; margin-top: 2px;">💎 <span id="hub-pts">0</span></div>
             </div>
 
             <div class="score-box">
@@ -355,6 +350,11 @@
         let activePieces = [null, null, null];
         let gameMode = 'standard'; 
         
+        // --- LOGICA INTEGRAZIONE PUNTI CENTRALIZZATA ---
+        let hubPoints = parseInt(localStorage.getItem('masterblock_hub_points')) || 0;
+        localStorage.setItem('points_masterblock', hubPoints); // Sincronizza l'Hub all'avvio
+        document.getElementById('hub-pts').innerText = hubPoints;
+
         document.getElementById('best-score').innerText = bestScore;
 
         const boardEl = document.getElementById('game-board');
@@ -393,7 +393,6 @@
                 }
             }
 
-            // Se siamo in modalità Challenge, posiziona da 3 a 5 ostacoli fissi distrutti/indistruttibili
             if (gameMode === 'challenge') {
                 let obstaclesCount = 3 + Math.floor(Math.random() * 3); 
                 while (obstaclesCount > 0) {
@@ -655,6 +654,13 @@
         function addScore(points) {
             score += points;
             scoreEl.innerText = score;
+
+            // AGGIORNAMENTO AUTOMATICO E SALVATAGGIO ALL'HUB
+            hubPoints += points;
+            localStorage.setItem('masterblock_hub_points', hubPoints);
+            localStorage.setItem('points_masterblock', hubPoints);
+            document.getElementById('hub-pts').innerText = hubPoints;
+
             if (score > bestScore) {
                 bestScore = score;
                 document.getElementById('best-score').innerText = bestScore;
