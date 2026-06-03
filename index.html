@@ -140,10 +140,11 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 420px; /* Ridotto leggermente per evitare sballi su tablet */
+            max-width: 420px; 
             padding: 10px;
             height: 100%;
-            justify-content: space-between; /* Distribuisce lo spazio equamente */
+            justify-content: space-between; 
+            position: relative;
         }
 
         .game-header {
@@ -180,7 +181,6 @@
             font-size: 1.4rem;
         }
 
-        /* CORREZIONE GRIGLIA: Dimensione stabile basata sulla larghezza massima senza subire variazioni */
         #game-board {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
@@ -198,10 +198,33 @@
         .cell {
             background-color: var(--cell-empty);
             border-radius: 4px;
+            transition: background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
         }
 
         .cell.filled {
             box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+            animation: popBlock 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popBlock {
+            0% { transform: scale(0.8); }
+            100% { transform: scale(1); }
+        }
+
+        .cell.clearing {
+            animation: clearBlock 0.3s ease-out forwards;
+        }
+
+        @keyframes clearBlock {
+            0% { transform: scale(1); background-color: #ffffff; opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* STILE QUADRATINI CHE STANNO PER ELIMINARSI (ILLUMINATI) */
+        .cell.will-clear {
+            background-color: #ffffff !important;
+            opacity: 0.85 !important;
+            box-shadow: 0 0 12px #ffffff, inset 0 0 4px rgba(0,0,0,0.2) !important;
         }
 
         .cell.obstacle {
@@ -210,7 +233,6 @@
             position: relative;
         }
 
-        /* CORREZIONE CONTENITORE PEZZI: Spazio fisso e sicuro sul fondo */
         #pieces-container {
             display: flex;
             justify-content: center;
@@ -228,7 +250,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: rgba(30, 41, 59, 0.2); /* Un leggero fondo per i tre slot di gioco */
+            background: rgba(30, 41, 59, 0.2); 
             border-radius: 8px;
         }
 
@@ -236,6 +258,7 @@
             display: grid;
             gap: 2px;
             cursor: grab;
+            transition: transform 0.1s ease;
         }
 
         .piece:active {
@@ -256,6 +279,27 @@
             position: fixed;
             pointer-events: none; 
             z-index: 1000;
+        }
+
+        #all-clear-msg {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #f1c40f;
+            text-shadow: 0 0 15px rgba(241, 196, 15, 0.8), 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 1500;
+            pointer-events: none;
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        #all-clear-msg.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
         }
 
         #game-over {
@@ -314,6 +358,8 @@
     </div>
 
     <div id="game-screen">
+        <div id="all-clear-msg">ALL CLEAR!</div>
+
         <div class="game-header">
             <div class="score-box">
                 <div class="score-label">Score</div>
@@ -348,7 +394,6 @@
     </div>
 
     <script>
-        // Rimuove immediatamente il focus all'avvio per prevenire crash grafici dovuti alle tastiere mobili
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
         }
@@ -374,7 +419,10 @@
             [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]], 
             [[1,1,1,1]], [[1],[1],[1],[1]], [[1,1],[1,1]], 
             [[1,0],[1,1]], [[0,1],[1,1]], [[1,1],[1,0]], [[1,1],[0,1]],
-            [[1,1,1],[0,1,0]], [[1,0,0],[1,1,1]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]]
+            [[1,1,1],[0,1,0]], [[1,0,0],[1,1,1]], [[1,1,1],[1,0,0]], [[1,1,1],[0,0,1]],
+            [[1,1,1],[1,1,1],[1,1,1]], 
+            [[1,1,1],[1,1,1]],         
+            [[1,1],[1,1],[1,1]]         
         ];
 
         function startGame(mode) {
@@ -524,6 +572,7 @@
             return { row, col };
         }
 
+        // AGGIORNATO: CALCOLO E VISUALIZZAZIONE DELLE RIGHE/COLONNE IN ELIMINAZIONE DURANTE IL DRAG
         function moveDrag(e) {
             if (!draggedElement) return;
 
@@ -531,18 +580,35 @@
             const yOffset = e.pointerType === 'touch' ? 75 : 0;
             draggedElement.style.top = `${e.clientY - yOffset}px`;
 
-            document.querySelectorAll('.cell.preview').forEach(cell => {
-                cell.classList.remove('preview');
-                if(!cell.classList.contains('obstacle')) cell.style.backgroundColor = '';
+            // Resetta lo stato di preview e illuminazione di tutte le celle
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('preview', 'will-clear');
+                if(!cell.classList.contains('obstacle') && !cell.classList.contains('filled')) {
+                    cell.style.backgroundColor = '';
+                }
                 cell.style.opacity = '';
             });
 
             const { row, col } = getGridCoords(e);
+            
             if (canPlace(dragData.shape, row, col)) {
                 const shape = dragData.shape;
+                
+                // Creiamo una griglia virtuale temporanea per calcolare cosa si riempirebbe
+                let tempBoard = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        tempBoard[r][c] = board[r][c];
+                    }
+                }
+
+                // Applichiamo il pezzo corrente nella griglia virtuale temporanea
                 for (let r = 0; r < shape.length; r++) {
                     for (let c = 0; c < shape[r].length; c++) {
                         if (shape[r][c] === 1) {
+                            tempBoard[row + r][col + c] = dragData.color;
+                            
+                            // Mostra intanto il pezzo semitrasparente sulle celle vuote
                             const cellEl = document.getElementById(`cell-${row + r}-${col + c}`);
                             if (cellEl && !cellEl.classList.contains('obstacle')) {
                                 cellEl.classList.add('preview');
@@ -552,6 +618,36 @@
                         }
                     }
                 }
+
+                // Troviamo quali righe e colonne risulterebbero piene
+                let rowsToClear = [];
+                let colsToClear = [];
+
+                for (let r = 0; r < ROWS; r++) {
+                    if (tempBoard[r].every(cell => cell !== 0 && cell !== 'obstacle')) rowsToClear.push(r);
+                }
+
+                for (let c = 0; c < COLS; c++) {
+                    let full = true;
+                    for (let r = 0; r < ROWS; r++) {
+                        if (tempBoard[r][c] === 0 || tempBoard[r][c] === 'obstacle') full = false;
+                    }
+                    if (full) colsToClear.push(c);
+                }
+
+                // Illumina i quadratini di quelle righe/colonne completate
+                rowsToClear.forEach(r => {
+                    for (let c = 0; c < COLS; c++) {
+                        const cell = document.getElementById(`cell-${r}-${c}`);
+                        if (cell && !cell.classList.contains('obstacle')) cell.classList.add('will-clear');
+                    }
+                });
+                colsToClear.forEach(c => {
+                    for (let r = 0; r < ROWS; r++) {
+                        const cell = document.getElementById(`cell-${r}-${c}`);
+                        if (cell && !cell.classList.contains('obstacle')) cell.classList.add('will-clear');
+                    }
+                });
             }
         }
 
@@ -561,9 +657,11 @@
 
             if (!draggedElement) return;
 
-            document.querySelectorAll('.cell.preview').forEach(cell => {
-                cell.classList.remove('preview');
-                if(!cell.classList.contains('obstacle')) cell.style.backgroundColor = '';
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('preview', 'will-clear');
+                if(!cell.classList.contains('obstacle') && !cell.classList.contains('filled')) {
+                    cell.style.backgroundColor = '';
+                }
                 cell.style.opacity = '';
             });
 
@@ -587,13 +685,7 @@
                 let blocksPlaced = dragData.shape.flat().filter(v => v === 1).length;
                 addScore(blocksPlaced);
 
-                clearLines();
-                
-                if (activePieces.every(p => p === null)) {
-                    generatePieces();
-                } else {
-                    checkGameOver();
-                }
+                clearLines(); 
             } else {
                 const originalPiece = originalSlot.querySelector('.piece');
                 if (originalPiece) originalPiece.style.opacity = '1';
@@ -648,16 +740,64 @@
             
             if (linesCleared > 0) {
                 rowsToClear.forEach(r => {
-                    for (let c = 0; c < COLS; c++) board[r][c] = 0;
+                    for (let c = 0; c < COLS; c++) {
+                        document.getElementById(`cell-${r}-${c}`).classList.add('clearing');
+                    }
                 });
                 colsToClear.forEach(c => {
-                    for (let r = 0; r < ROWS; r++) board[r][c] = 0;
+                    for (let r = 0; r < ROWS; r++) {
+                        document.getElementById(`cell-${r}-${c}`).classList.add('clearing');
+                    }
                 });
 
-                const bonus = [0, 10, 25, 45, 80]; 
-                addScore(bonus[Math.min(linesCleared, 4)]);
+                setTimeout(() => {
+                    rowsToClear.forEach(r => {
+                        for (let c = 0; c < COLS; c++) board[r][c] = 0;
+                    });
+                    colsToClear.forEach(c => {
+                        for (let r = 0; r < ROWS; r++) board[r][c] = 0;
+                    });
 
-                updateBoardVisuals();
+                    const bonus = [0, 10, 25, 45, 80]; 
+                    addScore(bonus[Math.min(linesCleared, 4)]);
+
+                    updateBoardVisuals();
+                    checkAllClear();
+
+                    if (activePieces.every(p => p === null)) {
+                        generatePieces();
+                    } else {
+                        checkGameOver();
+                    }
+                }, 300); 
+            } else {
+                if (activePieces.every(p => p === null)) {
+                    generatePieces();
+                } else {
+                    checkGameOver();
+                }
+            }
+        }
+
+        function checkAllClear() {
+            let isClear = true;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c] !== 0 && board[r][c] !== 'obstacle') {
+                        isClear = false;
+                        break;
+                    }
+                }
+                if (!isClear) break;
+            }
+
+            if (isClear) {
+                addScore(100); 
+                const msgEl = document.getElementById('all-clear-msg');
+                msgEl.classList.add('show');
+                setTimeout(() => {
+                    msgEl.classList.remove('show');
+                }, 1500);
             }
         }
 
