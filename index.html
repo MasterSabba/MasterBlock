@@ -33,7 +33,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 100dvh;
         }
 
         .exit-button {
@@ -140,9 +140,10 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 500px;
-            padding: 20px;
+            max-width: 420px; /* Ridotto leggermente per evitare sballi su tablet */
+            padding: 10px;
             height: 100%;
+            justify-content: space-between; /* Distribuisce lo spazio equamente */
         }
 
         .game-header {
@@ -150,47 +151,48 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 0 10px;
-            margin-top: 40px; 
+            margin-top: 35px; 
+            margin-bottom: 10px;
         }
 
         .score-box {
             background: #1e293b;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 8px;
             text-align: center;
-            min-width: 90px;
+            min-width: 85px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
         .score-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #94a3b8;
             text-transform: uppercase;
             margin-bottom: 3px;
         }
 
         .score-value {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: bold;
         }
 
         .game-title-small h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
         }
 
+        /* CORREZIONE GRIGLIA: Dimensione stabile basata sulla larghezza massima senza subire variazioni */
         #game-board {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
             grid-template-rows: repeat(8, 1fr);
-            gap: 2px;
+            gap: 3px;
             background-color: var(--grid-bg);
-            padding: 4px;
-            border-radius: 6px;
-            width: 95vw;
-            max-width: 400px;
+            padding: 6px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 380px; 
             aspect-ratio: 1 / 1;
+            margin: 0 auto;
         }
 
         .cell {
@@ -208,13 +210,15 @@
             position: relative;
         }
 
+        /* CORREZIONE CONTENITORE PEZZI: Spazio fisso e sicuro sul fondo */
         #pieces-container {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-top: auto;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
             margin-bottom: 20px;
-            height: 120px;
+            height: 110px;
             width: 100%;
         }
 
@@ -224,6 +228,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            background: rgba(30, 41, 59, 0.2); /* Un leggero fondo per i tre slot di gioco */
+            border-radius: 8px;
         }
 
         .piece {
@@ -237,8 +243,8 @@
         }
 
         .piece-cell {
-            width: 25px;
-            height: 25px;
+            width: 24px;
+            height: 24px;
             border-radius: 4px;
         }
 
@@ -342,6 +348,11 @@
     </div>
 
     <script>
+        // Rimuove immediatamente il focus all'avvio per prevenire crash grafici dovuti alle tastiere mobili
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+
         const ROWS = 8;
         const COLS = 8;
         let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
@@ -350,9 +361,8 @@
         let activePieces = [null, null, null];
         let gameMode = 'standard'; 
         
-        // --- LOGICA INTEGRAZIONE PUNTI CENTRALIZZATA ---
         let hubPoints = parseInt(localStorage.getItem('masterblock_hub_points')) || 0;
-        localStorage.setItem('points_masterblock', hubPoints); // Sincronizza l'Hub all'avvio
+        localStorage.setItem('points_masterblock', hubPoints); 
         document.getElementById('hub-pts').innerText = hubPoints;
 
         document.getElementById('best-score').innerText = bestScore;
@@ -444,7 +454,7 @@
             
             const pieceEl = document.createElement('div');
             pieceEl.classList.add('piece');
-            pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 25px)`;
+            pieceEl.style.gridTemplateColumns = `repeat(${shape[0].length}, 24px)`;
             
             const solidColors = ['#c0392b', '#e67e22', '#f1c40f', '#27ae60', '#2980b9', '#8e44ad', '#d81b60', '#0097e6'];
             const randomColor = solidColors[Math.floor(Math.random() * solidColors.length)];
@@ -482,7 +492,7 @@
 
             const boardRect = boardEl.getBoundingClientRect();
             const gridCellWidth = boardRect.width / COLS;
-            const currentPieceCellWidth = 25; 
+            const currentPieceCellWidth = 24; 
             const exactScaleFactor = gridCellWidth / currentPieceCellWidth;
 
             draggedElement.style.transform = `translate(-50%, -50%) scale(${exactScaleFactor})`;
@@ -655,7 +665,6 @@
             score += points;
             scoreEl.innerText = score;
 
-            // AGGIORNAMENTO AUTOMATICO E SALVATAGGIO ALL'HUB
             hubPoints += points;
             localStorage.setItem('masterblock_hub_points', hubPoints);
             localStorage.setItem('points_masterblock', hubPoints);
