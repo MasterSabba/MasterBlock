@@ -220,7 +220,6 @@
             100% { transform: scale(0); opacity: 0; }
         }
 
-        /* STILE QUADRATINI CHE STANNO PER ELIMINARSI (ILLUMINATI) */
         .cell.will-clear {
             background-color: #ffffff !important;
             opacity: 0.85 !important;
@@ -572,7 +571,6 @@
             return { row, col };
         }
 
-        // AGGIORNATO: CALCOLO E VISUALIZZAZIONE DELLE RIGHE/COLONNE IN ELIMINAZIONE DURANTE IL DRAG
         function moveDrag(e) {
             if (!draggedElement) return;
 
@@ -580,7 +578,6 @@
             const yOffset = e.pointerType === 'touch' ? 75 : 0;
             draggedElement.style.top = `${e.clientY - yOffset}px`;
 
-            // Resetta lo stato di preview e illuminazione di tutte le celle
             document.querySelectorAll('.cell').forEach(cell => {
                 cell.classList.remove('preview', 'will-clear');
                 if(!cell.classList.contains('obstacle') && !cell.classList.contains('filled')) {
@@ -594,7 +591,6 @@
             if (canPlace(dragData.shape, row, col)) {
                 const shape = dragData.shape;
                 
-                // Creiamo una griglia virtuale temporanea per calcolare cosa si riempirebbe
                 let tempBoard = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
                 for(let r=0; r<ROWS; r++) {
                     for(let c=0; c<COLS; c++) {
@@ -602,13 +598,11 @@
                     }
                 }
 
-                // Applichiamo il pezzo corrente nella griglia virtuale temporanea
                 for (let r = 0; r < shape.length; r++) {
                     for (let c = 0; c < shape[r].length; c++) {
                         if (shape[r][c] === 1) {
                             tempBoard[row + r][col + c] = dragData.color;
                             
-                            // Mostra intanto il pezzo semitrasparente sulle celle vuote
                             const cellEl = document.getElementById(`cell-${row + r}-${col + c}`);
                             if (cellEl && !cellEl.classList.contains('obstacle')) {
                                 cellEl.classList.add('preview');
@@ -619,7 +613,6 @@
                     }
                 }
 
-                // Troviamo quali righe e colonne risulterebbero piene
                 let rowsToClear = [];
                 let colsToClear = [];
 
@@ -635,7 +628,6 @@
                     if (full) colsToClear.push(c);
                 }
 
-                // Illumina i quadratini di quelle righe/colonne completate
                 rowsToClear.forEach(r => {
                     for (let c = 0; c < COLS; c++) {
                         const cell = document.getElementById(`cell-${r}-${c}`);
@@ -810,6 +802,15 @@
             localStorage.setItem('points_masterblock', hubPoints);
             document.getElementById('hub-pts').innerText = hubPoints;
 
+            // Invio dei punti aggiornati all'Hub genitore tramite postMessage
+            const scoreMsg = {
+                type: 'SCORE_UPDATE',
+                gameKey: 'master-block',
+                points: hubPoints
+            };
+            if (window.opener) window.opener.postMessage(scoreMsg, '*');
+            if (window.parent && window.parent !== window) window.parent.postMessage(scoreMsg, '*');
+
             if (score > bestScore) {
                 bestScore = score;
                 document.getElementById('best-score').innerText = bestScore;
@@ -839,6 +840,15 @@
             if (!hasMoves) {
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('game-over').style.display = 'flex';
+
+                // Notifica di fine partita/vittoria punti all'Hub
+                const winMsg = {
+                    type: 'GAME_WIN',
+                    gameKey: 'master-block',
+                    points: score
+                };
+                if (window.opener) window.opener.postMessage(winMsg, '*');
+                if (window.parent && window.parent !== window) window.parent.postMessage(winMsg, '*');
             }
         }
 
