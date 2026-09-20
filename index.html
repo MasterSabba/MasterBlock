@@ -392,31 +392,23 @@
         <button class="menu-btn" onclick="returnToMenu()">Menu Principale</button>
     </div>
 
-<script>
+    <script>
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
         }
 
-        // Funzione per ottenere il prefisso utente attivo
-        function getActiveUserPrefix() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const userFromUrl = urlParams.get('user');
-            const currentUser = userFromUrl || localStorage.getItem('currentUser') || 'default';
-            return currentUser ? `${currentUser}_` : '';
-        }
-
-        const userPrefix = getActiveUserPrefix();
         const ROWS = 8;
         const COLS = 8;
         let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
         let score = 0;
-        let bestScore = parseInt(localStorage.getItem(`${userPrefix}masterblock_best_score`)) || 0;
+        let bestScore = localStorage.getItem('masterblock_best_score') || 0;
         let activePieces = [null, null, null];
         let gameMode = 'standard'; 
         
-        let hubPoints = parseInt(localStorage.getItem(`${userPrefix}masterblock_hub_points`)) || 0;
-        localStorage.setItem(`${userPrefix}points_masterblock`, hubPoints); 
+        let hubPoints = parseInt(localStorage.getItem('masterblock_hub_points')) || 0;
+        localStorage.setItem('points_masterblock', hubPoints); 
         document.getElementById('hub-pts').innerText = hubPoints;
+
         document.getElementById('best-score').innerText = bestScore;
 
         const boardEl = document.getElementById('game-board');
@@ -806,16 +798,15 @@
             scoreEl.innerText = score;
 
             hubPoints += points;
-            localStorage.setItem(`${userPrefix}masterblock_hub_points`, hubPoints);
-            localStorage.setItem(`${userPrefix}points_masterblock`, hubPoints);
+            localStorage.setItem('masterblock_hub_points', hubPoints);
+            localStorage.setItem('points_masterblock', hubPoints);
             document.getElementById('hub-pts').innerText = hubPoints;
 
-            // Invio aggiornamento all'HUB
+            // Invio dei punti aggiornati all'Hub genitore tramite postMessage
             const scoreMsg = {
                 type: 'SCORE_UPDATE',
                 gameKey: 'master-block',
-                points: hubPoints,
-                user: userPrefix.replace('_', '')
+                points: hubPoints
             };
             if (window.opener) window.opener.postMessage(scoreMsg, '*');
             if (window.parent && window.parent !== window) window.parent.postMessage(scoreMsg, '*');
@@ -823,7 +814,7 @@
             if (score > bestScore) {
                 bestScore = score;
                 document.getElementById('best-score').innerText = bestScore;
-                localStorage.setItem(`${userPrefix}masterblock_best_score`, bestScore); 
+                localStorage.setItem('masterblock_best_score', bestScore); 
             }
         }
 
@@ -850,12 +841,11 @@
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('game-over').style.display = 'flex';
 
-                // Notifica di fine partita/vittoria punti all'HUB
+                // Notifica di fine partita/vittoria punti all'Hub
                 const winMsg = {
                     type: 'GAME_WIN',
                     gameKey: 'master-block',
-                    points: score,
-                    user: userPrefix.replace('_', '')
+                    points: score
                 };
                 if (window.opener) window.opener.postMessage(winMsg, '*');
                 if (window.parent && window.parent !== window) window.parent.postMessage(winMsg, '*');
