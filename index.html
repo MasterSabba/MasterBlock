@@ -340,7 +340,7 @@
 </head>
 <body>
 
-    <a href="https://mastersabba.github.io/MasterSabba/" class="exit-button" title="Torna all'Hub">×</a>
+    <a href="https://mastersabba.github.io/MasterSabba/" onclick="exitToHub(event)" class="exit-button" title="Torna all'Hub">×</a>
 
     <div id="start-screen">
         <h1><span class="title-master">MASTER</span> <span class="title-block">BLOCK</span></h1>
@@ -393,7 +393,6 @@
     </div>
 
     <script>
-        // Funzioni dinamiche per recuperare l'utente e il prefisso corrente
         function getCurrentUserId() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('userId') || sessionStorage.getItem('masterhub_logged_user') || localStorage.getItem('masterhub_logged_user') || 'guest';
@@ -405,20 +404,33 @@
         }
 
         function exitToHub(e) {
-    if (e) e.preventDefault();
-    if (window.opener && !window.opener.closed) { window.close(); }
-    else { window.location.href = "https://mastersabba.github.io/MasterSabba/"; }
-}
+            if (e) e.preventDefault();
+            if (window.opener && !window.opener.closed) { 
+                window.close(); 
+            } else { 
+                window.location.href = "https://mastersabba.github.io/MasterSabba/"; 
+            }
+        }
 
-function notifyHub(gameKey, points) {
-    const payload = {
-        type: 'GAME_WIN',
-        gameKey: 'master-block',
-        points: points
-    };
-    if (window.opener) window.opener.postMessage(payload, '*');
-    if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
-}
+        function notifyHub(gameKey, points) {
+            const payload = {
+                type: 'GAME_WIN',
+                gameKey: 'master-block',
+                points: points,
+                timestamp: Date.now()
+            };
+
+            // Invio 1: postMessage per popup/iframe
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage(payload, '*');
+            }
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(payload, '*');
+            }
+
+            // Invio 2: LocalStorage event (compatibile Safari / iOS)
+            localStorage.setItem('mastersabba_pending_win', JSON.stringify(payload));
+        }
 
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
@@ -444,7 +456,6 @@ function notifyHub(gameKey, points) {
             document.getElementById('best-score').innerText = bestScore;
         }
 
-        // Inizializza i dati dell'utente corrente
         loadUserGameData();
 
         const boardEl = document.getElementById('game-board');
@@ -869,7 +880,7 @@ function notifyHub(gameKey, points) {
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('game-over').style.display = 'flex';
 
-                // Notifica la fine partita con il punteggio finale
+                // Notifica la fine partita all'Hub con il punteggio finale
                 notifyHub('master-block', score);
             }
         }
