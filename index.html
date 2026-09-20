@@ -393,6 +393,20 @@
     </div>
 
     <script>
+      // Recupera l'ID dell'utente salvato in sessione/localStorage (o 'guest')
+const currentUserId = sessionStorage.getItem('masterhub_logged_user') || localStorage.getItem('masterhub_logged_user') || 'guest';
+
+function notifyHub(gameKey, points) {
+    const payload = {
+        gameKey: gameKey,
+        points: points,
+        userId: currentUserId
+    };
+
+    if (window.opener) window.opener.postMessage(payload, '*');
+    if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
+}
+
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
         }
@@ -800,7 +814,7 @@
             }
         }
 
-        function addScore(points) {
+function addScore(points) {
             score += points;
             scoreEl.innerText = score;
 
@@ -809,13 +823,8 @@
             localStorage.setItem(`${userPrefix}points_masterblock`, hubPoints);
             document.getElementById('hub-pts').innerText = hubPoints;
 
-            const scoreMsg = {
-                type: 'SCORE_UPDATE',
-                gameKey: 'master-block',
-                points: hubPoints
-            };
-            if (window.opener) window.opener.postMessage(scoreMsg, '*');
-            if (window.parent && window.parent !== window) window.parent.postMessage(scoreMsg, '*');
+            // Invia i punti aggiornati all'HUB
+            notifyHub('master-block', points);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -847,13 +856,8 @@
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('game-over').style.display = 'flex';
 
-                const winMsg = {
-                    type: 'GAME_WIN',
-                    gameKey: 'master-block',
-                    points: score
-                };
-                if (window.opener) window.opener.postMessage(winMsg, '*');
-                if (window.parent && window.parent !== window) window.parent.postMessage(winMsg, '*');
+                // Notifica la fine partita e invia il punteggio finale all'HUB
+                notifyHub('master-block', score);
             }
         }
 
