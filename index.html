@@ -404,16 +404,21 @@
             return (uid && uid !== 'guest') ? `${uid}_` : 'guest_';
         }
 
-        function notifyHub(gameKey, points) {
-            const payload = {
-                gameKey: gameKey,
-                points: points,
-                userId: getCurrentUserId()
-            };
+        function exitToHub(e) {
+    if (e) e.preventDefault();
+    if (window.opener && !window.opener.closed) { window.close(); }
+    else { window.location.href = "https://mastersabba.github.io/MasterSabba/"; }
+}
 
-            if (window.opener) window.opener.postMessage(payload, '*');
-            if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
-        }
+function notifyHub(gameKey, points) {
+    const payload = {
+        type: 'GAME_WIN',
+        gameKey: 'master-block',
+        points: points
+    };
+    if (window.opener) window.opener.postMessage(payload, '*');
+    if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
+}
 
         if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
