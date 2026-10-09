@@ -337,10 +337,11 @@
             margin-top: 10px !important;
         }
       .exit-button {
-            position: absolute; top: 15px; left: 20px; font-size: 2rem; line-height: 1;
-            color: var(--empty-border); text-decoration: none; z-index: 100;
-            transition: all 0.2s ease; -webkit-tap-highlight-color: transparent; font-family: Arial, sans-serif;
-        }
+    position: absolute; top: 15px; left: 20px; font-size: 2rem; line-height: 1;
+    color: #94a3b8; text-decoration: none; z-index: 2001;
+    transition: all 0.2s ease; font-family: Arial, sans-serif;
+}
+        
         .exit-button:hover { color: var(--text-color); transform: scale(1.1); }
     </style>
 </head>
@@ -403,9 +404,6 @@
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-<script src="score-hub.js"></script>
-<script src="script.js"></script>
     
     <script>
         function getCurrentUserId() {
@@ -428,28 +426,14 @@
         }
 
         function notifyHub(gameKey, points) {
-            const payload = {
-                type: 'GAME_WIN',
-                gameKey: 'master-block',
-                points: points,
-                timestamp: Date.now()
-            };
-
-            // Invio 1: postMessage per popup/iframe
-            if (window.opener && !window.opener.closed) {
-                window.opener.postMessage(payload, '*');
-            }
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage(payload, '*');
-            }
-
-            // Invio 2: LocalStorage event (compatibile Safari / iOS)
-            localStorage.setItem('mastersabba_pending_win', JSON.stringify(payload));
-        }
-
-        if (document.activeElement && typeof document.activeElement.blur === 'function') {
-            document.activeElement.blur();
-        }
+    const target = window.opener || (window.parent !== window ? window.parent : null);
+    if (target) {
+        target.postMessage({
+            gameKey: 'master-block',
+            points: points
+        }, '*');
+    }
+}
 
         const ROWS = 8;
         const COLS = 8;
